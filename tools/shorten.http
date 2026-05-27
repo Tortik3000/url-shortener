@@ -1,0 +1,69 @@
+### POST /shorten — happy path
+POST {{baseUrl}}/shorten
+Content-Type: application/json
+
+{
+  "url": "{{sampleURL}}"
+}
+
+> {%
+client.test("status is 201 Created", () => {
+    client.assert(response.status === 201, "expected 201, got " + response.status);
+});
+client.test("response has short_code and short_url", () => {
+    client.assert(response.body.short_code, "short_code missing");
+    client.assert(response.body.short_url, "short_url missing");
+});
+client.global.set("lastShortCode", response.body.short_code);
+%}
+
+### POST /shorten — idempotency (same URL → same code)
+POST {{baseUrl}}/shorten
+Content-Type: application/json
+
+{
+  "url": "{{sampleURL}}"
+}
+
+> {%
+client.test("returns same short_code as previous", () => {
+    client.assert(
+        response.body.short_code === client.global.get("lastShortCode"),
+        "expected idempotent short_code"
+    );
+});
+%}
+
+### POST /shorten — INVALID_URL (empty string)
+POST {{baseUrl}}/shorten
+Content-Type: application/json
+
+{
+  "url": ""
+}
+
+### POST /shorten — INVALID_URL (unsupported scheme)
+POST {{baseUrl}}/shorten
+Content-Type: application/json
+
+{
+  "url": "ftp://example.com/file"
+}
+
+### POST /shorten — INVALID_URL (no host)
+POST {{baseUrl}}/shorten
+Content-Type: application/json
+
+{
+  "url": "https://"
+}
+
+
+### POST /shorten — INVALID_REQUEST (wrong type for url field)
+POST {{baseUrl}}/shorten
+Content-Type: application/json
+
+{
+  "url": 42
+}
+

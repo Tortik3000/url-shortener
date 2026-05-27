@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: url-shortener-postgres
+    environment:
+      POSTGRES_DB: urlshortener
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d urlshortener"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - url-shortener
+
+  app:
+    build: .
+    container_name: url-shortener
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/urlshortener?sslmode=disable
+      PORT: "8080"
+      STORAGE: "postgres"
+      BASE_URL: "http://localhost:8080"
+      SNOWFLAKE_MACHINE_ID: "0"
+    networks:
+      - url-shortener
+
+networks:
+  url-shortener:
+    name: url-shortener
+
+volumes:
+  pgdata:

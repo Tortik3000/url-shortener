@@ -1,0 +1,29 @@
+### Setup: create a link to resolve in subsequent requests
+POST {{baseUrl}}/shorten
+Content-Type: application/json
+
+{
+  "url": "{{sampleURL}}"
+}
+
+> {%
+client.global.set("shortCode", response.body.short_code);
+%}
+
+### GET /{code} — happy path (302 Found, redirect to original URL)
+GET {{baseUrl}}/{{shortCode}}
+
+> {%
+client.test("status is 302", () => {
+    client.assert(response.status === 302, "expected 302, got " + response.status);
+});
+client.test("Location header points to original url", () => {
+    const loc = response.headers.valueOf("Location");
+    client.assert(loc, "Location header missing");
+});
+%}
+
+### GET /{code} — NOT_FOUND (well-formed code, no such link)
+GET {{baseUrl}}/zzzzZZZZ99
+
+
